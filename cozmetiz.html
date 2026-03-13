@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Tracker Pro</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 15px; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #25D366; color: white; border: none; font-weight: bold; }
+        .edit-btn { background: #ffa500; }
+        .del-btn { background: #ff4d4d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .summary-box { background: #e8f5e9; padding: 15px; margin: 20px 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <h3>Manage Products</h3>
+    <input type="text" id="pName" placeholder="Product Name">
+    <input type="number" id="pCost" placeholder="Cost">
+    <input type="number" id="pSell" placeholder="Selling Price">
+    <button onclick="saveProduct()">Save Product</button>
+
+    <h3>Place Order</h3>
+    <select id="productSelect"></select>
+    <button onclick="placeOrder()">Add to History</button>
+
+    <div class="summary-box" id="stats">
+        <div>Total Items Sold: <span id="count">0</span></div>
+        <div>Total Cost: $<span id="tCost">0</span></div>
+        <div>Total Profit: $<span id="tProfit">0</span></div>
+    </div>
+
+    <h3>Order History</h3>
+    <table id="orderTable">
+        <tr><th>Product</th><th>Cost</th><th>Profit</th><th>Action</th></tr>
+    </table>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+        let history = JSON.parse(localStorage.getItem('history')) || [];
+
+        function render() {
+            let select = document.getElementById('productSelect');
+            select.innerHTML = products.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+            
+            let table = document.getElementById('orderTable');
+            table.innerHTML = '<tr><th>Product</th><th>Cost</th><th>Profit</th><th>Action</th></tr>';
+            
+            history.forEach((h, i) => {
+                table.innerHTML += `<tr>
+                    <td>${h.name}</td>
+                    <td><input type="number" id="cost_${i}" value="${h.cost}" style="width:60px"></td>
+                    <td><input type="number" id="profit_${i}" value="${h.profit}" style="width:60px"></td>
+                    <td>
+                        <button class="edit-btn" onclick="updateOrder(${i})">Save</button>
+                        <button class="del-btn" onclick="deleteOrder(${i})">Del</button>
+                    </td>
+                </tr>`;
+            });
+
+            let tCost = history.reduce((sum, h) => sum + parseFloat(h.cost), 0);
+            let tProfit = history.reduce((sum, h) => sum + parseFloat(h.profit), 0);
+            document.getElementById('count').innerText = history.length;
+            document.getElementById('tCost').innerText = tCost.toFixed(2);
+            document.getElementById('tProfit').innerText = tProfit.toFixed(2);
+        }
+
+        function updateOrder(i) {
+            history[i].cost = document.getElementById(`cost_${i}`).value;
+            history[i].profit = document.getElementById(`profit_${i}`).value;
+            localStorage.setItem('history', JSON.stringify(history));
+            render();
+        }
+
+        function deleteOrder(i) {
+            history.splice(i, 1);
+            localStorage.setItem('history', JSON.stringify(history));
+            render();
+        }
+
+        function saveProduct() {
+            let p = { name: document.getElementById('pName').value, cost: document.getElementById('pCost').value, sell: document.getElementById('pSell').value };
+            products.push(p);
+            localStorage.setItem('products', JSON.stringify(products));
+            location.reload();
+        }
+
+        function placeOrder() {
+            let p = products[document.getElementById('productSelect').value];
+            if(!p) return alert("Add product first!");
+            history.push({ name: p.name, cost: p.cost, profit: (p.sell - p.cost).toFixed(2) });
+            localStorage.setItem('history', JSON.stringify(history));
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>
